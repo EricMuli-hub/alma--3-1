@@ -1,0 +1,85 @@
+/* Landing page. Uses the colour variables in styles.css, so light and dark both work. */
+body.lp{overflow-x:hidden}
+.lp .bar{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--paper) 80%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .2s,box-shadow .2s}
+.lp .bar.on{border-color:var(--line);box-shadow:0 6px 20px #0e1a380d}
+.lp nav.top{padding:14px 24px}
+.lp nav.top .l{gap:10px}
+.lp .ghost{color:var(--ink);text-decoration:none;font-weight:600;font-size:14px;padding:8px 12px;border-radius:9px;opacity:.8;transition:.15s;background:none;border:0;cursor:pointer}
+.lp .ghost:hover{opacity:1;background:var(--acb)}
+.lp .btn{transition:transform .15s,box-shadow .15s,background .15s}
+.lp .btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px #0e1a3822}
+.lp .btn.lg{padding:14px 26px;font-size:16px;border-radius:11px}
+
+/* Hero */
+.hero2{position:relative;padding:64px 0 96px;background:radial-gradient(800px 440px at 92% -10%,#eadfc0 0,transparent 62%),radial-gradient(700px 400px at -10% 100%,#dbe4fa 0,transparent 60%),var(--paper)}
+.hero2:before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:44px 44px;opacity:.35;-webkit-mask-image:radial-gradient(ellipse at 70% 30%,#000 0,transparent 70%);mask-image:radial-gradient(ellipse at 70% 30%,#000 0,transparent 70%)}
+[data-theme=dark] .hero2{background:radial-gradient(800px 440px at 92% -10%,#2b2a22 0,transparent 62%),radial-gradient(700px 400px at -10% 100%,#18254a 0,transparent 60%),var(--paper)}
+.hero2 .w{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:6px 14px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--mute)}
+.badge i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px var(--okb)}
+.hero2 h1{font-size:clamp(40px,5.6vw,68px);letter-spacing:-.02em;margin:18px 0 16px}
+.hero2 h1 em{font-style:normal;background:linear-gradient(transparent 68%,#d9a44166 68%);padding:0 2px}
+.hero2 .sub{font-size:19px;color:var(--mute);max-width:34ch;margin:0 0 28px}
+.hero2 .cta{display:flex;gap:12px;flex-wrap:wrap}
+.hero2 .more{margin-top:18px;font-size:14px;color:var(--mute)}
+
+/* Certificate visual */
+.vis{position:relative;min-height:400px;display:grid;place-items:center}
+.cert2{position:relative;width:min(380px,100%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:34px 30px 30px;text-align:center;box-shadow:0 30px 60px #0e1a3826;transform:rotate(-2deg);outline:1px solid #d9a44155;outline-offset:-12px}
+.cert2 small{font-weight:800;letter-spacing:.22em;font-size:11px;color:var(--gold);text-transform:uppercase}
+.cert2 h3{font-size:25px;margin:12px 0 4px}.cert2 p{margin:0;color:var(--mute);font-size:14px}
+.cert2 .ln{height:7px;border-radius:4px;background:var(--line);margin:10px auto 0;width:70%}.cert2 .ln.sm2{width:46%}
+.cert2 .seal2{width:70px;height:70px;margin:20px auto 0;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#f2d27c,#b8862b);color:#fff;box-shadow:0 8px 18px #b8862b55}
+.cert2 .seal2 svg{width:34px;height:34px}
+.chip2{position:absolute;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-weight:700;font-size:13px;box-shadow:0 14px 30px #0e1a3822;animation:fl 6s ease-in-out infinite}
+.chip2 svg{width:18px;height:18px;flex:none}
+.chip2.a{right:-4px;top:22px;color:var(--ok)}.chip2.b{left:-6px;bottom:96px;animation-delay:-2s}.chip2.c{right:6px;bottom:20px;animation-delay:-4s}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* Check bar */
+.checkw{position:relative;z-index:5;margin-top:-48px}
+.checkbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:0 22px 50px #0e1a3822}
+.checkbar .t{display:flex;gap:12px;align-items:center;flex:0 0 auto}.checkbar .t svg{width:34px;height:34px;color:var(--ac);padding:7px;background:var(--acb);border-radius:10px}
+.checkbar .t b{font:700 18px "Libre Caslon Text",serif}
+.checkbar input{flex:1 1 280px;min-width:0}
+.checkbar .btn{flex:0 0 auto}
+#qr{flex:1 1 100%}#qr:empty{display:none}
+
+/* Sections */
+.lp .s{padding:84px 0}
+.lp h2.t2{font-size:clamp(28px,3.6vw,42px);text-align:center;margin-bottom:12px}
+.lp p.t3{text-align:center;color:var(--mute);margin:0 auto 40px;max-width:46ch}
+.steps2{display:grid;gap:20px;grid-template-columns:repeat(3,1fr);position:relative}
+.steps2:before{content:"";position:absolute;left:16%;right:16%;top:46px;border-top:2px dashed var(--line)}
+.st2{position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 24px;text-align:center;transition:transform .2s,box-shadow .2s}
+.st2:hover{transform:translateY(-5px);box-shadow:0 20px 40px #0e1a3818}
+.ico{width:60px;height:60px;border-radius:16px;display:grid;place-items:center;margin:0 auto 16px;background:var(--acb);color:var(--ac);position:relative}
+.ico svg{width:28px;height:28px}
+.st2 .no{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:var(--gold);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
+.st2 h3{font-size:22px;margin-bottom:6px}.st2 p{margin:0;color:var(--mute)}
+.feat{display:grid;gap:16px;grid-template-columns:repeat(4,1fr)}
+.ft{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;transition:transform .2s,border-color .2s}
+.ft:hover{transform:translateY(-4px);border-color:var(--gold)}
+.ft .ico{margin:0 0 14px;width:48px;height:48px;border-radius:13px}.ft .ico svg{width:24px;height:24px}
+.ft b{display:block;font:700 18px "Libre Caslon Text",serif;margin-bottom:4px}.ft span{color:var(--mute);font-size:14.5px}
+.band{background:linear-gradient(135deg,#0e1a38,#1b2f6b);color:#fff;padding:64px 0;position:relative;overflow:hidden}
+.band:before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;right:-120px;top:-180px;background:radial-gradient(circle,#d9a44140,transparent 70%)}
+.band .stats{position:relative;gap:0}.band .stats>div{flex:1 1 180px;padding:8px 24px}.band .stats>div+div{border-left:1px solid #ffffff26}
+.band .stats b{font-size:clamp(36px,5vw,54px);color:#f2d27c}.band .stats span{color:#c9d1e6;font-size:15px}
+.cta2{text-align:center}.cta2 h2{font-size:clamp(28px,3.6vw,42px);margin-bottom:22px}.cta2 .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+/* Footer */
+.lp footer{padding:44px 0 30px;background:var(--sbg)}
+.fcols{display:grid;gap:28px;grid-template-columns:1.4fr 1fr 1fr}
+.fcols b{color:#fff;display:block;margin-bottom:10px}.fcols a{display:block;color:#c9d1e6;text-decoration:none;margin:6px 0;font-size:14px}.fcols a:hover{color:#f2d27c}
+.fcols p{margin:6px 0 0;color:#9aa6c4;max-width:30ch;font-size:14px}
+.fbase{margin-top:28px;padding-top:18px;border-top:1px solid #ffffff1f;color:#8f9bbb;font-size:13px}
+
+/* Reveal */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}.rv.in{opacity:1;transform:none}
+@media(max-width:900px){.hero2 .w{grid-template-columns:1fr;gap:20px}.vis{min-height:340px;order:-1}.steps2,.feat{grid-template-columns:1fr 1fr}.steps2:before{display:none}.fcols{grid-template-columns:1fr 1fr}.fcols>div:first-child{grid-column:1/-1}}
+@media(max-width:620px){.hero2{padding:36px 0 84px}.steps2,.feat{grid-template-columns:1fr}.band .stats>div+div{border-left:0;border-top:1px solid #ffffff26}.lp .hide-s{display:none}.chip2.b{left:0}.checkbar .btn{width:100%}.lp .s{padding:60px 0}}
+@media(prefers-reduced-motion:reduce){.chip2{animation:none}.rv{opacity:1;transform:none;transition:none}.lp .btn,.st2,.ft{transition:none}}
+.lp nav.top .btn{white-space:nowrap}
+@media(max-width:620px){.lp nav.top{padding:12px 16px}.lp nav.top .l{gap:6px}.lp nav.top .btn.sm{padding:7px 10px}.lp .chip2.b{display:none}.lp .vis{min-height:300px}}
+@media(max-width:400px){.lp nav.top .ghost{display:none}}

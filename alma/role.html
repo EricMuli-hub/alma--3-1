@@ -1,0 +1,13 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Choose your role – Alma</title><link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="css/styles.css"></head><body>
+<div id="toast" role="status"></div>
+
+<nav class="top"><a class="logo" href="index.html"><span id="mk"></span>Alma</a><a class="btn o sm" href="index.html">Home</a></nav>
+<div class="w" style="padding-bottom:60px"><h1 style="font-size:38px;margin-top:18px">Who are you?</h1><p class="lead" id="p"></p>
+<div class="tabs"><a id="t1">Create account</a><a id="t2">Sign in</a></div><div class="grid" id="rl"></div></div>
+
+<div id="modal"></div><button class="mailfab noprint" data-mail>Demo mailbox</button>
+<script src="js/config.js"></script><script src="js/store.js"></script><script>
+$("#mk").innerHTML=MARK;const m=qp().get("mode")==="signin"?"signin":"signup";
+$("#p").textContent=m==="signup"?"Pick your role.":"Pick your role to open the right sign-in page.";
+$("#t1").href="role.html?mode=signup";$("#t2").href="role.html?mode=signin";$(m==="signup"?"#t1":"#t2").setAttribute("aria-current","page");
+$("#rl").innerHTML=["admin","student","employer","regulator"].map(k=>{const r=ROLES[k];return'<a class="rc" style="--c:'+r.c+'" href="auth.html?role='+k+'&mode='+m+'"><h3>'+r.n+'</h3><p>'+r.does+'</p><b>Continue as '+r.n.toLowerCase()+' →</b></a>'}).join("")</script></body></html>

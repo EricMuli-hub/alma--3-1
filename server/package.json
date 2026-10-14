@@ -1,0 +1,33 @@
+{
+  "name": "alma-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Alma backend: accounts, smart contract roles, IPFS storage, AI fraud checks, audit ledger.",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node test/smoke.js",
+    "build:contract": "node scripts/compile.js",
+    "setup": "node scripts/setup.js",
+    "doctor": "node scripts/doctor.js",
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/restore.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "ethers": "^6.17.0",
+    "ganache": "^7.9.2",
+    "kubo-rpc-client": "^7.1.0",
+    "multiformats": "^13.4.2",
+    "nodemailer": "^10.1.1",
+    "qrcode": "^1.5.4",
+    "solc": "^0.8.26"
+  },
+  "devDependencies": {
+    "smtp-server": "^3.19.22",
+    "jsqr": "^1.4.0"
+  }
+}

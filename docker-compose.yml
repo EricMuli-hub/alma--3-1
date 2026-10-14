@@ -1,0 +1,25 @@
+# Alma behind automatic HTTPS, with three IPFS nodes. Not tested here: follow docs/DEPLOY.md and run `npm run doctor` first.
+services:
+  alma:
+    build: .
+    restart: unless-stopped
+    env_file: server/.env
+    environment:
+      IPFS_API: http://ipfs1:5001,http://ipfs2:5001,http://ipfs3:5001
+      TRUST_PROXY: "1"
+    volumes: ["alma-data:/data"]
+    depends_on: [ipfs1, ipfs2, ipfs3]
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment: { DOMAIN: "${DOMAIN}" }
+    volumes: ["./deploy/Caddyfile:/etc/caddy/Caddyfile:ro", "caddy-data:/data"]
+    depends_on: [alma]
+  ipfs1: &ipfs
+    image: ipfs/kubo:v0.32.1
+    restart: unless-stopped
+    volumes: ["ipfs1:/data/ipfs", "./deploy/ipfs-init.sh:/container-init.d/001-alma.sh:ro"]
+  ipfs2: { <<: *ipfs, volumes: ["ipfs2:/data/ipfs", "./deploy/ipfs-init.sh:/container-init.d/001-alma.sh:ro"] }
+  ipfs3: { <<: *ipfs, volumes: ["ipfs3:/data/ipfs", "./deploy/ipfs-init.sh:/container-init.d/001-alma.sh:ro"] }
+volumes: { alma-data: {}, caddy-data: {}, ipfs1: {}, ipfs2: {}, ipfs3: {} }

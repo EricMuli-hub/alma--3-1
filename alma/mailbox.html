@@ -1,0 +1,7 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex"><title>Demo mailbox – Alma</title><link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="css/styles.css"></head><body>
+<div id="toast" role="status"></div>
+<nav class="top"><a class="logo" href="index.html"><span id="mk"></span>Alma</a><button class="btn o sm" id="rf">Refresh</button></nav>
+<div class="w" style="max-width:760px;padding-bottom:50px"><h1 style="font-size:32px">Demo mailbox</h1><p style="color:var(--mute)">Alma has no email service yet. Every email it would send appears here.</p><input id="q" placeholder="Filter by address" style="margin:12px 0 18px"><div id="l"></div></div>
+<div id="modal"></div><button class="mailfab noprint" data-mail>Demo mailbox</button>
+<script src="js/config.js"></script><script src="js/store.js"></script><script>function draw(){const q=$("#q").value.toLowerCase(),m=(Store.d.mail||[]).filter(x=>!q||x.to.toLowerCase().includes(q));$("#l").innerHTML=m.map(x=>'<div class="mailitem"><b>'+esc(x.subject)+'</b><br><span class="hint">To '+esc(x.to)+' · '+ft(x.ts)+'</span><pre>'+esc(x.body)+'</pre></div>').join("")||"<p>No emails yet.</p>"}
+Store.ready.then(()=>{$("#mk").innerHTML=MARK;draw();$("#q").oninput=draw;$("#rf").onclick=()=>{Store.d=JSON.parse(localStorage.getItem(Store.K));draw()}})</script></body></html>

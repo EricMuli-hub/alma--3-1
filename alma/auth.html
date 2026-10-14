@@ -1,0 +1,14 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Account – Alma</title><link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="css/styles.css"></head><body>
+<div id="toast" role="status"></div>
+
+<nav class="top"><a class="logo" href="index.html"><span id="mk"></span>Alma</a><a class="btn o sm" id="back">Change role</a></nav>
+<div class="auth"><div class="side"><h2 id="st"></h2><p id="sp"></p><b>With this account you can:</b><ul id="sa"></ul><div class="note" id="sn"></div></div>
+<div class="form"><h1 id="h"></h1><div class="tabs" id="tb"><a id="t1">Create account</a><a id="t2">Sign in</a></div>
+<form id="f" novalidate><div id="ex"></div><label for="em">Email <span class="hint" id="mh"></span></label><input id="em" type="email" autocomplete="email"><div id="pws"></div>
+<div class="meter" id="mt"><i></i><i></i><i></i><i></i></div><div class="err" id="er" role="alert"></div><button class="btn" id="sub" style="width:100%"></button></form>
+<p class="hint" id="tcn" style="margin-top:12px">By continuing you accept the <a href="legal.html#terms" target="_blank">terms and conditions</a> and the <a href="legal.html#privacy" target="_blank">privacy notice</a>.</p><div id="tools" style="margin-top:14px"><a href="#" id="fg">Forgot password?</a> <button type="button" class="btn o sm" style="margin-left:10px" id="wl">Sign in with wallet</button></div><div id="pnl"></div>
+<p id="dm" style="font-size:14px;color:var(--mute);margin-top:18px">Just exploring? <button class="btn o sm" id="demo">Fill demo account</button></p></div></div>
+<datalist id="insts"></datalist>
+
+<div id="modal"></div><button class="mailfab noprint" data-mail>Demo mailbox</button>
+<script src="js/config.js"></script><script src="js/store.js"></script><script src="js/auth.js"></script><script src="js/live.js"></script><script>mountAuth()</script></body></html>

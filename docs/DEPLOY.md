@@ -38,6 +38,8 @@ From the folder that holds `docker-compose.yml`:
     DOMAIN=your-domain docker compose up -d --build
 
 HTTPS certificates are fetched automatically. Open `https://your-domain`.
+On supported browsers, choose **Install Alma** to add it to your device. On iPhone or iPad, open the site in Safari, tap **Share**, then **Add to Home Screen**.
+
 
 ## 5. First sign-in
 

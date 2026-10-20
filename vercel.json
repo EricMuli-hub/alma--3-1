@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "installCommand": "npm --prefix server ci --omit=dev",
+  "outputDirectory": "alma",
+  "functions": {
+    "api/[...route].js": {
+      "includeFiles": "server/build/**"
+    }
+  }
+}

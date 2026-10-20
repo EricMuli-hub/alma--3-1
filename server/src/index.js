@@ -2,7 +2,7 @@
 const fs = require('fs'), pth = require('path'), http = require('http'), core = require('./core'), chain = require('./chain'), ipfs = require('./ipfs'), ai = require('./ai'), { routes, anchorNow } = require('./routes'), backup = require('./backup'), config = require('./config'), { HttpError } = core;
 const ORIGINS = (process.env.ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean), ANCHOR_EVERY = +process.env.ANCHOR_EVERY || 20;
 const WEB = pth.resolve(process.env.WEB_DIR || pth.join(__dirname, '..', '..', 'alma'));
-const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
 const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'";
 const secure = (req) => ({ 'Content-Security-Policy': CSP, 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin', 'Permissions-Policy': 'camera=(self), microphone=(), geolocation=()', 'Cross-Origin-Opener-Policy': 'same-origin', ...(req.headers['x-forwarded-proto'] === 'https' || req.socket.encrypted ? { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' } : {}) });
 const clientIp = req => (process.env.TRUST_PROXY === '1' && String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()) || req.socket.remoteAddress || '';
@@ -20,6 +20,8 @@ const metrics = () => { const s = lat.slice().sort((a, b) => a - b), q = p => s.
 
 async function setup() {
   const cfg = config.check(); cfg.warnings.forEach(w => console.warn('warning:', w)); if (cfg.errors.length) { cfg.errors.forEach(e => console.error('error:', e)); throw new Error('Fix the settings above before starting in production.'); }
+  const startupUnlock = core.isRemote ? await core.acquireRemoteLock() : null;
+  if (core.isRemote) await core.loadRemote();
   const db = core.D(); await chain.init(); await ipfs.init(); ai.train();
   if (!db.meta.guard) { await chain.grantRole('r:ai', 'Regulator'); db.meta.guard = true; }   // the AI guard may place holds, nothing more
   if (!db.users.some(u => u.role === 'owner')) {
@@ -28,7 +30,7 @@ async function setup() {
     db.users.push({ id: core.rid('U'), role: 'owner', name: 'Platform owner', email: email.toLowerCase(), pw: await core.hashPw(pw) }); db.consents.push({ user: db.users[db.users.length - 1].id, terms: '1.0', ts: Date.now() });
     if (shown) console.log(`Owner account made: ${email} / ${pw}  (shown once)`);
   }
-  core.save(); core.flush(); backup.schedule();
+  core.save(); await core.flush(); if (startupUnlock) await startupUnlock(); backup.schedule();
 }
 let anchoring = false;
 function maybeAnchor() {
@@ -40,6 +42,7 @@ function createServer() {
   return http.createServer(async (req, res) => {
     const t0 = process.hrtime.bigint(), url = new URL(req.url, 'http://x'), ip = clientIp(req);
     const origin = req.headers.origin, allow = ORIGINS.includes('*') || (origin && ORIGINS.includes(origin));
+    let unlock = null;
     const send = (status, body, raw) => {
       res.writeHead(status, { 'Content-Type': raw ? raw : 'application/json', 'Cache-Control': 'no-store', ...secure(req), ...(allow ? { 'Access-Control-Allow-Origin': origin || '*', 'Vary': 'Origin', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Api-Key', 'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS' } : {}) });
       res.end(raw ? body : JSON.stringify(body)); count.requests++; if (status >= 500) count.errors++; const ms = Number(process.hrtime.bigint() - t0) / 1e6; lat.push(ms); if (lat.length > 500) lat.shift();
@@ -49,13 +52,15 @@ function createServer() {
     if (req.method === 'OPTIONS') return send(204, {});
     try {
       if (limited('ip:' + ip, 600, 6e4)) throw new HttpError(429, 'Too many requests');
-      const big = /^\/(credentials|v1)/.test(url.pathname) && req.method === 'POST', max = big ? 3e6 : 1e5;
+      const apiPath = url.pathname.replace(/^\/api(?=\/|$)/, '') || '/';
+      const big = /^\/(credentials|v1)/.test(apiPath) && req.method === 'POST', max = big ? 3e6 : 1e5;
       let raw = ''; for await (const ch of req) { raw += ch; if (raw.length > max) throw new HttpError(413, 'Request too large'); }
       let body = {}; if (raw) { try { body = JSON.parse(raw); } catch (e) { throw new HttpError(400, 'Body must be JSON'); } }
-      if (url.pathname === '/auth/login' && limited('login:' + ip + String(body.email), 8, 9e5)) throw new HttpError(429, 'Too many tries. Wait a few minutes.');
-      let path = url.pathname.replace(/^\/v1\/issue\/bulk$/, '/credentials/bulk').replace(/^\/v1\/issue$/, '/credentials').replace(/^\/v1\/records$/, '/credentials/issued');
+      if (apiPath === '/auth/login' && limited('login:' + ip + String(body.email), 8, 9e5)) throw new HttpError(429, 'Too many tries. Wait a few minutes.');
+      let path = apiPath.replace(/^\/v1\/issue\/bulk$/, '/credentials/bulk').replace(/^\/v1\/issue$/, '/credentials').replace(/^\/v1\/records$/, '/credentials/issued');
       let hit = null, params = {}; for (const r of routes) { if (r.m !== req.method) continue; const m = r.re.exec(path); if (m) { hit = r; params = m.groups || {}; break; } }
       if (!hit) { if (req.method === 'GET' && serveStatic(url.pathname, res, req)) return; throw new HttpError(404, 'Not found'); }
+      if (core.isRemote) { unlock = await core.acquireRemoteLock(); await core.loadRemote(); }
       const x = { origin: (process.env.PUBLIC_URL || ((req.headers['x-forwarded-proto'] || 'http') + '://' + req.headers.host)).replace(/\/$/, ''), body, params, query: url.searchParams, dirty: false, metrics, user: null, viaKey: false };
       if (hit.action) {
         const key = req.headers['x-api-key'], db = core.D();
@@ -71,9 +76,10 @@ function createServer() {
         if ((process.env.REQUIRE_2FA || '').split(',').includes(x.user.role) && !x.user.totp && !/^\/me/.test(path)) throw new HttpError(403, 'Turn on two-step sign-in first', { setup2fa: true });
         if (hit.action !== 'any' && !core.POLICY[hit.action].includes(x.user.role)) { core.block('DENIED', hit.action, x.user.id, x.user.inst, 70, ['Blocked by role policy']); const ar = ai.watch(x.user.inst, x.user.id); core.save(); throw new HttpError(403, 'Your role cannot do that'); }
       }
-      const out = await hit.h(x); if (x.dirty || req.method !== 'GET') { core.save(); maybeAnchor(); }
+      const out = await hit.h(x); if (x.dirty || req.method !== 'GET') { core.save(); await core.flush(); maybeAnchor(); }
       if (out.raw) return send(200, out.body, out.type); send(out.status || 200, out.body);
-    } catch (e) { if (!(e instanceof HttpError)) console.error(e); send(e.status || 500, { error: e instanceof HttpError ? e.message : 'Something went wrong', ...(e.extra || {}) }); }
+    } catch (e) { if (unlock && core.isRemote) await core.flush().catch(err => console.error('Supabase save failed', err.message)); if (!(e instanceof HttpError)) console.error(e); send(e.status || 500, { error: e instanceof HttpError ? e.message : 'Something went wrong', ...(e.extra || {}) }); }
+    finally { if (unlock) await unlock().catch(e => console.error('Supabase lock release failed', e.message)); }
   });
 }
 const stop = srv => () => { core.flush(); srv.close(() => process.exit(0)); setTimeout(() => process.exit(0), 3000).unref(); };

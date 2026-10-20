@@ -57,3 +57,13 @@ Send the token as `Authorization: Bearer <token>`.
 - Set `SMTP_URL` so claim codes go to students by email. Without it the institution sees the code.
 - Institutions sign with wallets the server holds for them. For a fully decentralised version, let institutions bring their own wallets.
 - Have a lawyer review `alma/legal.html`.
+
+## Supabase persistence
+
+The current backend persists Alma's existing state document in Supabase Postgres. The document contains the application's users, institutions, academic credentials, verification grants and counts, consent records, and hash-chained audit events. This is the same state model used by the local JSON demo backend; the browser demo remains in local storage and is never seeded into Supabase.
+
+1. In the Supabase SQL Editor for the Alma project, review and run `supabase/migrations/202610200001_alma_runtime.sql` once. It creates an empty runtime row, enables RLS, blocks `anon` and `authenticated`, and grants the server `service_role` access to the required persistence RPCs.
+2. Configure `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the Alma server environment. `SUPABASE_URL` is the project URL. `SUPABASE_SERVICE_ROLE_KEY` is the server-only secret from Supabase API settings; never use it in the static frontend or commit it.
+3. Keep `TOKEN_SECRET`, `MASTER_KEY`, and the other production settings in that same server-side secret store. Restart the API after applying the migration and configuring variables.
+
+The browser's publishable key is not used by the current frontend because all account and data access goes through Alma's API. The API validates Alma bearer tokens, applies its role policy and resource ownership checks, and uses the service role only for server persistence. Do not set `SUPABASE_SERVICE_ROLE_KEY` to the publishable key. The API refuses to start when only one of `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` is set. A fresh database row starts empty; demo browser records are not imported.

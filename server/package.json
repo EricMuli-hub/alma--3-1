@@ -18,6 +18,7 @@
   },
   "license": "UNLICENSED",
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
     "ethers": "^6.17.0",
     "ganache": "^7.9.2",
     "kubo-rpc-client": "^7.1.0",

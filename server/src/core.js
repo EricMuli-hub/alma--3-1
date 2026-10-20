@@ -1,9 +1,14 @@
 'use strict';
 const fs = require('fs'), path = require('path'), c = require('crypto'), { promisify } = require('util'), scrypt = promisify(c.scrypt);
-const DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
+const SUPABASE_URL = process.env.SUPABASE_URL, SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!!SUPABASE_URL !== !!SUPABASE_KEY) throw new Error('Set both SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+const remote = !!SUPABASE_URL;
+const supabaseClient = remote ? require('@supabase/supabase-js').createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }) : null;
+const DIR = process.env.DATA_DIR || path.join(remote ? require('os').tmpdir() : path.join(__dirname, '..'), remote ? 'alma' : 'data');
 fs.mkdirSync(DIR, { recursive: true });
 const DAY = 864e5, sha = s => c.createHash('sha256').update(s).digest('hex'), rid = p => p + '-' + c.randomBytes(4).toString('hex');
-class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
+let revision = 0, gate = Promise.resolve(), lockToken = null;
 
 /* Keys: from the environment in production, otherwise made once and kept in data/keys.json */
 const KF = path.join(DIR, 'keys.json'); let K = {};
@@ -17,19 +22,83 @@ if (!K.token || !K.master) {
 }
 const derive = label => '0x' + Buffer.from(c.hkdfSync('sha256', Buffer.from(K.master, 'hex'), Buffer.alloc(0), 'alma:' + label, 32)).toString('hex');
 
-/* Data. One JSON file, written safely. Swap this block for Postgres when you need more than one server. */
+/* Local mode uses an atomic JSON file. Vercel stores the same state in a locked Supabase row. */
 const DBF = path.join(DIR, 'db.json'); let db;
-const load = () => {
-  db = fs.existsSync(DBF) ? JSON.parse(fs.readFileSync(DBF, 'utf8')) : {};
-  for (const k of ['users', 'insts', 'creds', 'grants', 'blocks', 'mail', 'keys', 'alerts', 'consents']) db[k] = db[k] || [];
-  db.down = db.down || {}; db.meta = db.meta || {};
+const emptyDb = () => ({ users: [], insts: [], creds: [], grants: [], blocks: [], mail: [], keys: [], alerts: [], consents: [], down: {}, meta: {} });
+const normalize = data => {
+  const result = data || {};
+  for (const k of ['users', 'insts', 'creds', 'grants', 'blocks', 'mail', 'keys', 'alerts', 'consents']) result[k] = result[k] || [];
+  result.down = result.down || {}; result.meta = result.meta || {};
+  return result;
 };
-let dirty = false, timer = null;   // writes are batched, so saving stays fast as the data grows
-const flush = () => { if (!dirty) return; dirty = false; clearTimeout(timer); timer = null; fs.writeFileSync(DBF + '.tmp', JSON.stringify(db)); fs.renameSync(DBF + '.tmp', DBF); };
-const save = () => { dirty = true; if (!timer) timer = setTimeout(flush, +process.env.SAVE_DELAY_MS || 400); };
+const load = () => {
+  if (remote) throw new Error('Use loadRemote() when Supabase persistence is enabled');
+  db = normalize(fs.existsSync(DBF) ? JSON.parse(fs.readFileSync(DBF, 'utf8')) : emptyDb());
+};
+let dirty = false, timer = null;
+const supabaseRpc = async (name, args) => {
+  const { data, error } = await supabaseClient.rpc(name, args);
+  if (error) throw new Error(`Supabase RPC ${name} failed: ${error.message}`);
+  return data;
+};
+async function acquireRemoteLock() {
+  if (!remote) return async () => {};
+  const previous = gate;
+  let unlock;
+  gate = new Promise(resolve => { unlock = resolve; });
+  await previous;
+  const token = c.randomUUID(), deadline = Date.now() + 15000;
+  try {
+    while (Date.now() < deadline) {
+      const acquired = await supabaseRpc('alma_acquire_runtime', { p_token: token, p_lease_seconds: 300 });
+      if (acquired === true) {
+        lockToken = token;
+        return async () => {
+          try { await supabaseRpc('alma_release_runtime', { p_token: token }); }
+          finally { lockToken = null; unlock(); }
+        };
+      }
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    throw new Error('Alma database is busy; retry the request shortly');
+  } catch (error) {
+    unlock();
+    throw error;
+  }
+}
+const loadRemote = async () => {
+  if (!remote) return db;
+  const { data, error } = await supabaseClient.from('alma_runtime').select('state,revision').eq('id', true).maybeSingle();
+  if (error) throw new Error(`Supabase load failed: ${error.message}`);
+  if (!data) throw new Error('Supabase Alma state row is missing; apply the database migration first');
+  db = normalize(data.state || emptyDb());
+  revision = Number(data.revision);
+  dirty = false;
+  return db;
+};
+const flush = () => {
+  if (!dirty) return remote ? Promise.resolve() : undefined;
+  if (!remote) {
+    dirty = false; clearTimeout(timer); timer = null;
+    fs.writeFileSync(DBF + '.tmp', JSON.stringify(db)); fs.renameSync(DBF + '.tmp', DBF);
+    return;
+  }
+  if (!lockToken) throw new Error('Supabase state can only be saved while holding the runtime lock');
+  return (async () => {
+    const nextRevision = Number(await supabaseRpc('alma_save_runtime', { p_token: lockToken, p_revision: revision, p_state: db }));
+    if (!Number.isSafeInteger(nextRevision) || nextRevision <= revision) throw new Error('Supabase did not confirm the Alma state update');
+    revision = nextRevision;
+    dirty = false;
+  })();
+};
+const save = () => {
+  dirty = true;
+  if (!remote && !timer) timer = setTimeout(flush, +process.env.SAVE_DELAY_MS || 400);
+};
 const snapshot = () => { flush(); return Buffer.from(JSON.stringify(db)); };
 process.on('exit', flush);
-load();
+if (remote) db = emptyDb();
+else load();
 const D = () => db;
 
 /* Passwords and sign-in tokens */
@@ -55,4 +124,4 @@ const dk = h => Buffer.from(c.hkdfSync('sha256', Buffer.from(K.master, 'hex'), B
 const seal = (h, o) => { const iv = c.randomBytes(12), ci = c.createCipheriv('aes-256-gcm', dk(h), iv), ct = Buffer.concat([ci.update(Buffer.isBuffer(o) ? o : Buffer.from(JSON.stringify(o))), ci.final()]); return Buffer.concat([iv, ci.getAuthTag(), ct]); };
 const unseal = (h, x, asBuffer) => { const d = c.createDecipheriv('aes-256-gcm', dk(h), x.subarray(0, 12)); d.setAuthTag(x.subarray(12, 28)); const out = Buffer.concat([d.update(x.subarray(28)), d.final()]); return asBuffer ? out : JSON.parse(out.toString()); };
 
-module.exports = { HttpError, DAY, sha, rid, c, D, save, flush, snapshot, load, K, DBF, DIR, hashPw, checkPw, sign, unsign, POLICY, block, verifyChain, lh, derive, seal, unseal };
+module.exports = { HttpError, DAY, sha, rid, c, D, save, flush, snapshot, load, loadRemote, acquireRemoteLock, isRemote: remote, K, DBF, DIR, hashPw, checkPw, sign, unsign, POLICY, block, verifyChain, lh, derive, seal, unseal };

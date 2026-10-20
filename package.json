@@ -6,6 +6,12 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
     "dotenv": "^18.0.8",
-    "ethers": "^6.17.0"
+    "ethers": "^6.17.0",
+    "ganache": "^7.9.2",
+    "kubo-rpc-client": "^7.1.0",
+    "multiformats": "^13.4.2",
+    "nodemailer": "^10.1.1",
+    "qrcode": "^1.5.4",
+    "solc": "^0.8.26"
   }
 }

@@ -1,5 +1,7 @@
 'use strict';
 
+if (!process.env.PUBLIC_URL && process.env.VERCEL_URL) process.env.PUBLIC_URL = `https://${process.env.VERCEL_URL}`;
+
 const { createServer, setup } = require('../server/src/index');
 
 // Vercel keeps a warm Node process between requests. Reuse the app server and

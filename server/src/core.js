@@ -13,8 +13,9 @@ let revision = 0, gate = Promise.resolve(), lockToken = null;
 /* Keys: from the environment in production, otherwise made once and kept in data/keys.json */
 const KF = path.join(DIR, 'keys.json'); let K = {};
 try { K = JSON.parse(fs.readFileSync(KF, 'utf8')); } catch (e) { /* first run */ }
-if (process.env.TOKEN_SECRET) K.token = process.env.TOKEN_SECRET;
 if (process.env.MASTER_KEY) K.master = process.env.MASTER_KEY;
+if (process.env.TOKEN_SECRET && process.env.TOKEN_SECRET.length >= 32) K.token = process.env.TOKEN_SECRET;
+else if (K.master && /^[0-9a-f]{64}$/i.test(K.master)) K.token = Buffer.from(c.hkdfSync('sha256', Buffer.from(K.master, 'hex'), Buffer.alloc(0), 'alma:token-signing', 32)).toString('hex');
 if (!K.token || !K.master) {
   if (process.env.NODE_ENV === 'production') throw new Error('Set TOKEN_SECRET and MASTER_KEY');
   K.token = K.token || c.randomBytes(32).toString('hex'); K.master = K.master || c.randomBytes(32).toString('hex');

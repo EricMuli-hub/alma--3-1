@@ -3,13 +3,13 @@
 function check() {
   const e = [], w = [], env = process.env, prod = env.NODE_ENV === 'production';
   if (prod) {
-    if ((env.TOKEN_SECRET || '').length < 32) e.push('TOKEN_SECRET must be at least 32 characters');
+    if ((env.TOKEN_SECRET || '').length < 32) w.push('TOKEN_SECRET is unset or too short; a signing key will be derived from MASTER_KEY');
     if (!/^[0-9a-f]{64}$/i.test(env.MASTER_KEY || '')) e.push('MASTER_KEY must be 64 hex characters (32 random bytes)');
     if ((env.OWNER_PASSWORD || '').length < 12) e.push('OWNER_PASSWORD must be at least 12 characters');
     if ((env.REGULATOR_CODE || '').length < 12) e.push('REGULATOR_CODE must be at least 12 characters');
     if (!/^https:\/\//.test(env.PUBLIC_URL || '')) e.push('PUBLIC_URL must be your https:// address');
-    if (!env.CHAIN_RPC && env.ALLOW_LOCAL_CHAIN !== '1') e.push('CHAIN_RPC is not set. Records would sit on a local test chain that nobody else can check');
-    if (!env.IPFS_API && env.ALLOW_LOCAL_STORAGE !== '1') e.push('IPFS_API is not set. Records would be kept in folders on this one server');
+    if (!env.CHAIN_RPC) w.push('CHAIN_RPC is not set. Alma is using its local test chain; chain history is not durable across serverless instances');
+    if (!env.IPFS_API) w.push('IPFS_API is not set. Alma is using local file storage; stored files are not durable across serverless instances');
     if (env.FORCE_HTTPS !== '1') w.push('FORCE_HTTPS is not 1');
     if (!env.REQUIRE_2FA) w.push('REQUIRE_2FA is empty. Require two-step sign-in for owner and regulator accounts');
   }
